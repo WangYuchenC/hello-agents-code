@@ -1,13 +1,15 @@
 import os
 from serpapi import SerpApiClient
-from typing import Dict, Callable
+from typing import Any, Dict, Callable
 from dataclasses import dataclass
 import logging
 from dotenv import load_dotenv
 
 load_dotenv()
 logger = logging.getLogger(__name__)
-
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s %(filename)s %(levelname)s %(message)s"
+)
 
 def search(query: str) -> str:
     """一个基于SerpApi的网页搜索引擎工具.
@@ -56,6 +58,8 @@ class Tool:
     description: str
     func: Callable
 
+    def __call__(self, *args: Any, **kwargs: Any) -> Any:
+        return self.func(*args, **kwargs)
 
 class ToolExcutor:
     def __init__(self):
@@ -77,3 +81,24 @@ class ToolExcutor:
         return "\n".join(
             [f"- {name}:  {tool.description}" for name, tool in self.tools.items()]
         )
+
+if __name__ == "__main__":
+    tool_executor = ToolExcutor()
+
+    serach_description = "一个网页搜索引擎。当你需要回答关于时事、事实以及在你的知识库中找不到的信息时，应使用此工具。"
+    tool_executor.register_tool("Search", serach_description, search)
+
+    logger.info("\n--- 可用工具 ---")
+    logger.info(tool_executor.get_available_tools())
+
+    logger.info("\n--- 执行 Action: Search(['英伟达最新的GPU型号是什么']) ---")
+    tool_name = "Search"
+    tool_input = "英伟达最新的GPU型号是什么"
+
+    tool = tool_executor.get_tool(tool_name)
+    if tool:
+        observation = tool(tool_input)
+        logger.info("--- 观察(Observation) ---")
+        logger.info(observation)
+    else:
+        logger.error(f"错误：未找到名为 '{tool_name}' 的工具")
